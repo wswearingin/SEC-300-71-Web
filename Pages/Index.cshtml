@@ -1,29 +1,32 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Registration";
+}
+@section Scripts {
+        <script src="~/lib/jquery/jquery.min.js"></script>
+        <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+        <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
 }
 
 <div class="text-left">
-    <h1 class="display-4">First Inputs</h1>
-    <p>Here is the first form to be submitted:</p>
+    <h1 class="display-4">Paperclips Inc.</h1>
+    <p>Registration form:</p>
 
-    <form method="get">
-        <!-- Here is a text box -->
+    <form method="post">
+        <!-- Name text input -->
         <label for="firstName">First Name:</label>
         <input asp-for="firstName" class="item" type="text"
             id="firstName" name="firstName" placeholder="Jane Doe" />
+        <span asp-validation-for="firstName"></span>
 
         <br />
         
-        <!-- Here is a menu -->
-        <label for="preference">I like: </label>
-        <select asp-for="preference" class="item" id="preference" name="preference">
-            <option selected="true" disabled="disabled">Choose one</option>
-            <option value="ASP">ASP</option>
-            <option value="PHP">PHP</option>
-            <option value="JSP">JSP</option>
-        </select>
+        <!-- Email text input -->
+        <label for="email">Email:</label>
+        <input asp-for="email" class="item" type="text"
+            id="email" name="email" placeholder="example@email.com" />
+        <span asp-validation-for="email"></span>
 
         <br />
 
@@ -33,10 +36,14 @@
         <br />
     </form>
 
+    @if (ModelState.IsValid)
+    {
     <div class="text-left">Your Selections
         <br />
         First Name: @Model.firstName
         <br />
-        Preference: @Model.preference
+        Email: @Model.email
     </div>
+    }
+   
 </div>
