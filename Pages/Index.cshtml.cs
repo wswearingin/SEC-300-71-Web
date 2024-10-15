@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
+using System.Net;
+using System.Net.Mail;
 
 namespace SSD_web.Pages
 {
@@ -23,6 +25,36 @@ namespace SSD_web.Pages
             _logger = logger;
         }
 
+        public void SendConfirmationEmail()
+        {
+            string host = "smtp.gmail.com";
+            int port = 587;
+            var from = "william.swearingin@mymail.champlain.edu";
+            var username = "william.swearingin@mymail.champlain.edu";
+            var password = "PASSWORD";
+
+            var customerName = this.firstName;
+            var to = this.email;
+
+            var subject = "Confirm Registration";
+            var body = "Hi " + customerName + " here is your link to confirm: <link>";
+
+            MailMessage msg = new MailMessage(from, to, subject, body);
+            SmtpClient smtp = new SmtpClient(host, port);
+
+            smtp.Credentials = new NetworkCredential(username, password);
+            smtp.EnableSsl = true;
+            smtp.UseDefaultCredentials = false;
+
+            try
+            {
+                smtp.Send(msg);
+            }
+            catch (Exception exp)
+            {
+                _logger.LogError(exp, "An exception occured");
+            }
+        }
         //public void OnGet(string firstName, string email)
         //{
         //    this.firstName = firstName;
@@ -31,6 +63,12 @@ namespace SSD_web.Pages
 
         public IActionResult OnPost()
         {
+            if (ModelState.IsValid)
+            {
+                SendConfirmationEmail();
+                return Page();
+            }
+
             return Page();
         }
     }
