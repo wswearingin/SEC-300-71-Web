@@ -18,6 +18,8 @@ namespace SSD_web.Pages
         [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
         public string email {  get; set; }
 
+        public bool isSuccess { get; set; } = false;
+
         private readonly ILogger<IndexModel> _logger;
 
         public IndexModel(ILogger<IndexModel> logger)
@@ -55,18 +57,23 @@ namespace SSD_web.Pages
                 _logger.LogError(exp, "An exception occured");
             }
         }
-        //public void OnGet(string firstName, string email)
-        //{
-        //    this.firstName = firstName;
-        //    this.email = email;
-        //}
+        public void OnGet()
+        {
+            if (TempData["isSuccess"] != null)
+            {
+                isSuccess = (bool)TempData["isSuccess"];
+            }
+        }
 
         public IActionResult OnPost()
         {
             if (ModelState.IsValid)
             {
+                TempData["isSuccess"] = true;
                 SendConfirmationEmail();
-                return Page();
+                firstName = string.Empty;
+                email = string.Empty;
+                return RedirectToPage();
             }
 
             return Page();
