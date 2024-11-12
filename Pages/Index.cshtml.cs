@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Net.Mail;
+using MySqlConnector;
 
 namespace SSD_web.Pages
 {
@@ -16,6 +17,7 @@ namespace SSD_web.Pages
         [BindProperty]
         [Required(ErrorMessage = "Email is required.")]
         [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
+        [StringLength(25, ErrorMessage = "Maximum email length is 25 characters")]
         public string email {  get; set; }
 
         public bool isSuccess { get; set; } = false;
@@ -27,19 +29,51 @@ namespace SSD_web.Pages
             _logger = logger;
         }
 
-        public void SendConfirmationEmail()
+        private static Random random = new Random();
+        private string RandomLinkGenerator(int length)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            return new string(Enumerable.Repeat(chars, length)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
+        public void InsertRequest(string firstName, string email, string uid)
+        {
+            using (var con = new MySqlConnection("server=10.211.55.6;user id=webserver;database=registration;password=COURAGE7fluke9escrow3repay"))
+            {
+                con.Open();
+                using (var command = con.CreateCommand())
+                {
+                    command.CommandText = "INSERT INTO requests (fname, email, rdate, uid, used) VALUES (@firstName, @Email, @RDate, @Uid, @Used)";
+
+                    // Parameters to avoid SQL injection
+                    command.Parameters.AddWithValue("@firstName", firstName);
+                    command.Parameters.AddWithValue("@Email", email);
+                    command.Parameters.AddWithValue("@RDate", DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+                    command.Parameters.AddWithValue("@Uid", uid);
+                    command.Parameters.AddWithValue("@Used", "0");
+
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void SendConfirmationEmail(string uid)
         {
             string host = "smtp.gmail.com";
             int port = 587;
-            var from = "william.swearingin@mymail.champlain.edu";
-            var username = "william.swearingin@mymail.champlain.edu";
+            var from = "EMAIL";
+            var username = "EMAIL";
             var password = "PASSWORD";
 
             var customerName = this.firstName;
             var to = this.email;
 
+            var urlBase = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.ToUriComponent()}{HttpContext.Request.PathBase.ToUriComponent()}";
+            var uidURL = $"{urlBase}/confirmation?uid={uid}";
+
             var subject = "Confirm Registration";
-            var body = "Hi " + customerName + " here is your link to confirm: <link>";
+            var body = $"Hi " + customerName + $" here is your link to confirm: {uidURL}";
 
             MailMessage msg = new MailMessage(from, to, subject, body);
             SmtpClient smtp = new SmtpClient(host, port);
@@ -57,12 +91,33 @@ namespace SSD_web.Pages
                 _logger.LogError(exp, "An exception occured");
             }
         }
-        public void OnGet()
+
+        public void OnGet(string firstName, string email)
         {
-            if (TempData["isSuccess"] != null)
+            /*MySqlConnection con =
+                new MySqlConnection("server=YOUR_DB_IP;user id=USERNAME;database=DB_NAME;password=PASSWORD");
+            con.Open();
+            using (con)
             {
-                isSuccess = (bool)TempData["isSuccess"];
-            }
+                using (var command = con.CreateCommand())
+                {
+                    command.CommandText = "SELECT * FROM requests";
+                    using (var reader = command.ExecuteReader())
+                    {
+                        var indexOfCol1 = reader.GetOrdinal("fName");
+                        var indexOfCol2 = reader.GetOrdinal("email");
+                        while (reader.Read())
+                        {
+                            this.firstName = reader.GetValue(indexOfCol1).ToString();
+                            this.email = reader.GetValue(indexOfCol2).ToString();
+                        }
+                    }
+                }
+            }*/
+                if (TempData["isSuccess"] != null)
+                {
+                    isSuccess = (bool)TempData["isSuccess"];
+                }
         }
 
         public IActionResult OnPost()
@@ -70,7 +125,9 @@ namespace SSD_web.Pages
             if (ModelState.IsValid)
             {
                 TempData["isSuccess"] = true;
-                SendConfirmationEmail();
+                var uid = RandomLinkGenerator(32);
+                SendConfirmationEmail(uid);
+                InsertRequest(firstName, email, uid);
                 firstName = string.Empty;
                 email = string.Empty;
                 return RedirectToPage();
